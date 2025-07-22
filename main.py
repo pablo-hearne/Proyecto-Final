@@ -37,6 +37,13 @@ inquilinos ={"1A":{"Inquilino":"Pablo Hearne","Expensas":"300000","Tipo de pago"
              "2A":{"Inquilino":"Pablo Hearne","Expensas":"300000","Tipo de pago":"Pesos","Pagó?":"Sí"},
              }
 
+gastos = {"Sueldo Ariel":{"Monto":"500000","Descripción":"Sueldo correspondiente a Ariel"},
+          "Sueldo Jorge":{"Monto":"500000","Descripción":"Sueldo correspondiente a Jorge"},
+          "Sueldo Pepe":{"Monto":"500000","Descripción":"Sueldo correspondiente a Pepe"},
+          "Plomero":{"Monto":"20000","Descripción":"Arreglo cañería 8A"}
+          }
+
+
 def tipos_de_pago_flet(tipos_de_pago : list) -> list:
     lista_tipo_pago_flet = []
     for i in range(len(tipos_de_pago)):
@@ -66,29 +73,6 @@ def dict_to_rows(inquilinos : dict) -> list:
         rows_inq.append(ft.DataRow(cells))
     return rows_inq
 
-def ingresar_o_modificar(Page : ft.Page):
-    while True:
-        try:
-            nombre_completo = ft.TextField(label="Nombre Completo")           
-            expensas = ft.TextField(label="Expensas",hint_text="Ingrese decimales con coma y sin puntos.")
-            tipo_de_pago = ft.Dropdown(options=tipos_de_pago_flet(tipos_de_pago),
-                                        on_change=dropdown_changed,
-                                        key=dropdown_changed)
-            ya_pago = ft.Dropdown(options=[ft.DropdownOption(text="Sí",key="si"),ft.DropdownOption(text="No",key="no")])
-            Page.add(nombre_completo,
-                        expensas,
-                        tipo_de_pago,
-                        ya_pago)
-            
-
-        except Exception as e:
-            print (e)
-    return
-
-def mostrar_drawer(e):
-    page.view = True
-    page.drawer.update()
-    return
 
 
 
@@ -104,23 +88,62 @@ def main(page : ft.Page):
     page.window.bgcolor = "#326C71"
     page.window.icon = (ft.Icon(ft.Icons.ACCOUNT_BALANCE_OUTLINED))
     #   PORQUE NO CAMBIA EL ICONO LPM
-    page.vertical_alignment = ft.MainAxisAlignment.END
-    page.horizontal_alignment = "CENTER"
-    #       ESTOS ALIGMENTS ESTÁN SOBERANAMENTE AL PEDO
-    
-    #NO FUNCIONA NADA EN ÉSTA CASA
     
     
     #Eventos
     def cambio_de_pagina(e: ft.ControlEvent):
         page.views.clear()
-        if e.data == "0":
+        if e.data == "0" and page.route != "/main":
             page.go("/main")
-        elif e.data == "1":
+        elif e.data == "1" and page.route != "/agregar_inquilinos":
             page.go("/agregar_inquilinos")
     
+    def ingresar_o_modificar(e : ft.OptionalControlEventCallable,aux = False):
+        def funcion_auxiliar(f):
+            ingresar_o_modificar(f,aux=True)
+            page.close(alerta_inquilino_ya)
+            page.open(ft.SnackBar(ft.Text("Inquilino Modificado")))
+            return
+        alerta_expensas = ft.AlertDialog(
+                                modal=True,
+                                title=ft.Text("ALERTA"),
+                                content=ft.Text("Por favor ingrese numeros con puntos y sin coma"),
+                                actions=[
+                                    ft.TextButton("Perdón no lo hago de vuelta", on_click=lambda e: page.close(alerta_expensas)),
+                                ],
+                                actions_alignment=ft.MainAxisAlignment.END,
+                            )
+        alerta_inquilino_ya = ft.AlertDialog(
+                                modal=True,
+                                title=ft.Text("ALERTA"),
+                                content=ft.Text("El inquilino ya se encuentra registrado"),
+                                actions=[
+                                    ft.FilledButton("Modificar",color="#326C71",on_click=funcion_auxiliar),
+                                    ft.TextButton("Cancelar",on_click=lambda f: page.close(alerta_inquilino_ya)),
+                                ],
+                                actions_alignment=ft.MainAxisAlignment.END,
+                            )
+        try:
+            float(expensas.value)
+            if (departamento.value not in inquilinos) or aux:
+                inquilinos[departamento.value] = {
+                "Inquilino":nombre_completo.value,
+                "Expensas":expensas.value,
+                "Tipo de pago":tipo_de_pago.value,
+                "Pagó?":ya_pago.value
+                }
+                page.update()
+            else:
+                page.open(alerta_inquilino_ya)
 
+        except ValueError:
+            page.open(alerta_expensas)
+        
+        tabla_principal.rows = dict_to_rows(inquilinos)
+        tabla_principal.update()
     
+    
+
     #Componentes
     
     tabla_principal = ft.DataTable([ft.DataColumn(ft.Text("Departamento")),
@@ -133,17 +156,24 @@ def main(page : ft.Page):
                                     border = ft.border.all(5,"#326C71"),
                                     )
     
+    tabla_gastos = ft.DataTable([ft.DataColumn(ft.Text("Gasto")),
+                                 ft.DataColumn(ft.Text("Monto")),
+                                 ft.DataColumn(ft.Text("Descripción"))],
+                                 rows = dict_to_rows(gastos),
+                                 show_bottom_border=True,
+                                 border = ft.border.all(5,"#326C71"),
+                                 )
+    
+    departamento = ft.TextField(label="Departamento")
+    
     nombre_completo = ft.TextField(label="Nombre Completo")      
     
-    
-    expensas = ft.TextField(label="Expensas",hint_text="Decimales con coma y sin puntos")
-    
+    expensas = ft.TextField(label="Expensas",hint_text="Decimales con puntos y sin coma")
     
     tipo_de_pago = ft.Dropdown(value="Tipo de pago",options=tipos_de_pago_flet(tipos_de_pago),
                                             key=dropdown_changed)
-    
-    
-    ya_pago = ft.Dropdown(options=[ft.DropdownOption(text="Sí",key="si"),ft.DropdownOption(text="No",key="no")])
+
+    ya_pago = ft.Dropdown(options=[ft.DropdownOption(text="Sí",key="Sí"),ft.DropdownOption(text="No",key="No")])
     
     
     drawer_principal = ft.NavigationDrawer(
@@ -155,20 +185,21 @@ def main(page : ft.Page):
                 icon=ft.Icons.HOUSE_OUTLINED,
                 selected_icon=ft.Icon(ft.Icons.HOUSE),
             ),
-            ft.Divider(thickness=2),
+            ft.Divider(thickness=3),
             ft.NavigationDrawerDestination(
-                icon=ft.Icon(ft.Icons.ADD_BUSINESS_OUTLINED),
+                icon=ft.Icon(ft.Icons.PERSON_ADD_OUTLINED),
                 label="Agregar/modificar inquilinos",
-                selected_icon=ft.Icons.ADD_BUSINESS,
+                selected_icon=ft.Icons.PERSON_ADD,
             ),
             ft.NavigationDrawerDestination(
-                icon=ft.Icon(ft.Icons.PHONE_OUTLINED),
+                icon=ft.Icon(ft.Icons.PERSON_REMOVE_OUTLINED),
                 label="Quitar Inquilino",
-                selected_icon=ft.Icons.PHONE,
+                selected_icon=ft.Icons.PERSON_REMOVE,
             ),
+            ft.Divider(thickness=1,opacity=1),
             ft.NavigationDrawerDestination(
                 icon=ft.Icon(ft.Icons.ANALYTICS_OUTLINED),
-                label="Gastos",
+                label="Agregar Gastos",
                 selected_icon=ft.Icons.ANALYTICS
             )
         ]
@@ -178,27 +209,23 @@ def main(page : ft.Page):
     #Páginas
     
     
-    pagina_principal = ft.Row(controls=[
-        
-        ft.Row(
+    pagina_principal =ft.Row(
                             controls=[
-                                        # ft.Column([boton_drawer],alignment=ft.MainAxisAlignment.START),
                                         ft.Column(
                                             [tabla_principal],alignment=ft.MainAxisAlignment.END
                                             ,height=400),
+                                        ft.Column(
+                                            [tabla_gastos],alignment=ft.MainAxisAlignment.END
+                                            ,height=400)
                                     ],
                             alignment=ft.MainAxisAlignment.CENTER
-                            )],
-                              alignment=ft.MainAxisAlignment.CENTER)
+                            )
 
 
     
-    
-    pagina_inquilinos = ft.Row([
-        # drawer,
-        ft.Row(
+    pagina_inquilinos =ft.Column([ft.Row(
         [
-        #   ft.Column([boton_drawer],alignment=ft.MainAxisAlignment.START),
+          ft.Column([departamento]),
           ft.Column([
             nombre_completo,
             expensas
@@ -207,9 +234,15 @@ def main(page : ft.Page):
               tipo_de_pago,
               ya_pago
           ]),
-        ]
-    )
-    ],alignment=ft.MainAxisAlignment.CENTER)
+          ft.Column([
+              ft.Button("Agregar/modificar inquilino",color="#326C71",on_click=ingresar_o_modificar)
+          ],
+                    alignment=ft.MainAxisAlignment.END)
+        ],alignment=ft.MainAxisAlignment.CENTER
+    ),
+                                  tabla_principal
+                                  ],alignment=ft.MainAxisAlignment.CENTER,horizontal_alignment=ft.CrossAxisAlignment.CENTER)
+
     
     
     
@@ -223,7 +256,7 @@ def main(page : ft.Page):
                     [
                         ft.FloatingActionButton(icon=ft.Icons.MENU,on_click=lambda e:page.open(drawer_principal)),
                         pagina_principal
-                    ],drawer=drawer_principal
+                    ],drawer=drawer_principal,scroll=ft.ScrollMode.ADAPTIVE
                     )
         )
         page.update()
@@ -232,9 +265,8 @@ def main(page : ft.Page):
             ft.View("/agregar_inquilinos",
                     [
                         ft.FloatingActionButton(icon=ft.Icons.MENU,on_click=lambda e:page.open(drawer_principal)),
-                        pagina_inquilinos,
-                        ft.Button("Terminar de agregar",on_click=lambda e: page.go("/main"))
-                    ], drawer=drawer_principal
+                        pagina_inquilinos
+                    ], drawer=drawer_principal,scroll=ft.ScrollMode.ADAPTIVE
                     )
             )
             page.update()
@@ -258,7 +290,7 @@ def main(page : ft.Page):
 
 
 if __name__ == "__main__":
-    ft.app(target= main)
+    ft.app(target= main,name="Consorciapp")
 
 
 
