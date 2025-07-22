@@ -37,10 +37,10 @@ inquilinos ={"1A":{"Inquilino":"Pablo Hearne","Expensas":"300000","Tipo de pago"
              "2A":{"Inquilino":"Pablo Hearne","Expensas":"300000","Tipo de pago":"Pesos","Pagó?":"Sí"},
              }
 
-gastos = {"Sueldo Ariel":{"Monto":"500000","Descripción":"Sueldo correspondiente a Ariel"},
-          "Sueldo Jorge":{"Monto":"500000","Descripción":"Sueldo correspondiente a Jorge"},
-          "Sueldo Pepe":{"Monto":"500000","Descripción":"Sueldo correspondiente a Pepe"},
-          "Plomero":{"Monto":"20000","Descripción":"Arreglo cañería 8A"}
+gastos = {"Sueldo Ariel":{"Monto":"500000","Tipo de cambio":"Pesos","Descripción":"Sueldo correspondiente a Ariel"},
+          "Sueldo Jorge":{"Monto":"500000","Tipo de cambio":"Pesos","Descripción":"Sueldo correspondiente a Jorge"},
+          "Sueldo Pepe":{"Monto":"500000","Tipo de cambio":"Pesos","Descripción":"Sueldo correspondiente a Pepe"},
+          "Plomero":{"Monto":"20000","Tipo de cambio":"Pesos","Descripción":"Arreglo cañería 8A"}
           }
 
 
@@ -93,10 +93,13 @@ def main(page : ft.Page):
     #Eventos
     def cambio_de_pagina(e: ft.ControlEvent):
         page.views.clear()
+        print(e.data)
         if e.data == "0" and page.route != "/main":
             page.go("/main")
         elif e.data == "1" and page.route != "/agregar_inquilinos":
             page.go("/agregar_inquilinos")
+        elif e.data == "3" and page.route != "/agregar_gastos":
+            page.go("/agregar_gastos")
     
     def ingresar_o_modificar(e : ft.OptionalControlEventCallable,aux = False):
         def funcion_auxiliar(f):
@@ -158,6 +161,7 @@ def main(page : ft.Page):
     
     tabla_gastos = ft.DataTable([ft.DataColumn(ft.Text("Gasto")),
                                  ft.DataColumn(ft.Text("Monto")),
+                                 ft.DataColumn(ft.Text("Tipo de Cambio")),
                                  ft.DataColumn(ft.Text("Descripción"))],
                                  rows = dict_to_rows(gastos),
                                  show_bottom_border=True,
@@ -171,9 +175,16 @@ def main(page : ft.Page):
     expensas = ft.TextField(label="Expensas",hint_text="Decimales con puntos y sin coma")
     
     tipo_de_pago = ft.Dropdown(value="Tipo de pago",options=tipos_de_pago_flet(tipos_de_pago),
-                                            key=dropdown_changed)
+                                            key=dropdown_changed,label="Moneda")
 
-    ya_pago = ft.Dropdown(options=[ft.DropdownOption(text="Sí",key="Sí"),ft.DropdownOption(text="No",key="No")])
+    ya_pago = ft.Dropdown(options=[ft.DropdownOption(text="Sí",key="Sí"),ft.DropdownOption(text="No",key="No")],label="Pagó?")
+    
+    gasto = ft.TextField(label="Gasto")
+    
+    gasto_monto = ft.TextField(label="Monto",hint_text="Número sin comas y con puntos")
+    
+    gasto_descripción = ft.TextField(label="Descripción")
+    
     
     
     drawer_principal = ft.NavigationDrawer(
@@ -242,6 +253,20 @@ def main(page : ft.Page):
     ),
                                   tabla_principal
                                   ],alignment=ft.MainAxisAlignment.CENTER,horizontal_alignment=ft.CrossAxisAlignment.CENTER)
+    
+    pagina_gastos = ft.Column(
+        [ft.Row(
+            [
+                gasto,
+                gasto_monto,
+                gasto_descripción,
+                tipo_de_pago,
+                ft.Button("Agregar")
+            ],ft.MainAxisAlignment.CENTER
+        ),
+         tabla_gastos
+         ],horizontal_alignment=ft.CrossAxisAlignment.CENTER
+    )
 
     
     
@@ -268,6 +293,16 @@ def main(page : ft.Page):
                         pagina_inquilinos
                     ], drawer=drawer_principal,scroll=ft.ScrollMode.ADAPTIVE
                     )
+            )
+            page.update()
+        elif page.route == "/agregar_gastos":
+            page.views.append(
+                ft.View("/agregar_gastos",
+                        [
+                            ft.FloatingActionButton(icon=ft.Icons.MENU,on_click=lambda e:page.open(drawer_principal)),
+                            pagina_gastos
+                        ],drawer=drawer_principal,scroll=ft.ScrollMode.ADAPTIVE 
+                )
             )
             page.update()
    
