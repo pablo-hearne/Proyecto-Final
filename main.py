@@ -1,121 +1,10 @@
-# Primero veamos que es lo que quiero
-# Programa para mantener al día a mi papá con los distintos ingresos y gastos de el consorcio
-# que tipo de tareas hay que hacer?
-# 1 - mantener todos los que pagaron y los que no
-# 2 - sumar cuanto se pagó al final del mes
-# 3 - interfaz para ingreso de datos
-# 4 - permanencia de datos
-# 5 - 
-#
-# diseño burdo de como va a ser la app:
-# https://www.figma.com/design/vSGNFtqIyQGVzrQL68UCga/App-para-consorcio?node-id=1-3&t=ELhwJEeQ6tgYoq3x-1 
-#
-
-
-# ¿cómo voy a guardar mis inquilinos? con diccionarios
-# cada inquilino es un {diccionario}
-#{"Departamento":"kasmdka","Inquilino": "kasndjasdna","Expensas":"ajsndajda","Tipo de pago":"ksdmfasdf"}
-
-
-
-
 import flet as ft
-import json
+from tools.funciones import *
+from tools.guardado_y_lectura import *
+from tools.herramientas_flet import *
 
-
-
-
-
-
+inquilinos,gastos = guardado_y_lectura.leer_json()
 tipos_de_pago = ["Pesos","Dólares","Otro"]
-
-inquilinos ={"1A":{"Inquilino":"Pablo Hearne","Expensas":"300000","Tipo de pago":"Pesos","Pagó?":"Sí"},
-             "1b":{"Inquilino":"Pablo Hearne","Expensas":"300000","Tipo de pago":"Pesos","Pagó?":"Sí"},
-             "1a":{"Inquilino":"Pablo Hearne","Expensas":"300000","Tipo de pago":"Pesos","Pagó?":"Sí"},
-             "KK":{"Inquilino":"Pablo Hearne","Expensas":"300000","Tipo de pago":"Pesos","Pagó?":"Sí"},
-             "1B":{"Inquilino":"Pablo Hearne","Expensas":"300000","Tipo de pago":"Pesos","Pagó?":"Sí"},
-             "2A":{"Inquilino":"Pablo Hearne","Expensas":"300000","Tipo de pago":"Pesos","Pagó?":"Sí"},
-             }
-
-gastos = {"Sueldo Ariel":{"Descripción":"Sueldo correspondiente a Ariel","Monto":"500000","Tipo de cambio":"Pesos"},
-          "Sueldo Jorge":{"Descripción":"Sueldo correspondiente a Jorge","Monto":"500000","Tipo de cambio":"Pesos",},
-          "Sueldo Pepe":{"Descripción":"Sueldo correspondiente a Pepe","Monto":"500000","Tipo de cambio":"Pesos"},
-          "Plomero":{"Descripción":"Arreglo cañería 8A","Monto":"20000","Tipo de cambio":"Pesos"}
-          }
-
-
-def tipos_de_pago_flet(tipos_de_pago : list) -> list:
-    lista_tipo_pago_flet = []
-    for i in range(len(tipos_de_pago)):
-        lista_tipo_pago_flet.append(
-            ft.DropdownOption(key=tipos_de_pago[i],text=tipos_de_pago[i]))
-    return lista_tipo_pago_flet
-
-def dropdown_changed(e):
-    tipo_de_pago_inquilino = e
-    return tipo_de_pago_inquilino.data
-
-
-def dict_to_rows(inquilinos : dict) -> list:
-    inquilinos_list = list(inquilinos.keys())
-    rows_inq = []
-    cells = []
-    for i in range(len(inquilinos)):
-        cells = []
-        categoria = list(inquilinos[inquilinos_list[i]].keys())
-        cells.append(ft.DataCell(
-        ft.Text(inquilinos_list[i]))
-        )
-        for j in range(len(categoria)):
-            cells.append(ft.DataCell(
-                ft.Text(f"{inquilinos[inquilinos_list[i]][categoria[j]]}"))
-            )
-        rows_inq.append(ft.DataRow(cells))
-    return rows_inq
-
-def dict_to_list(inquilinos:dict) -> list:
-    datos = inquilinos.keys()
-    lista = []
-    for i in datos:
-        info = list(inquilinos[i].keys())
-        lista.append(ft.DropdownOption(
-                key=i,
-                text=str(i) + " - "+str(inquilinos[i][info[0]]))
-                     )
-    return lista
-
-def ganancias(inquilinos:dict,gastos:dict):
-    expensas_total_pesos = 0
-    gastos_total_pesos = 0
-    expensas_total_dolares = 0
-    gastos_total_dolares = 0
-    expensas_total_otros = 0
-    gastos_total_otros = 0
-    for inquilino in inquilinos:
-        uno = inquilinos[inquilino]["Tipo de pago"] == "Pesos"
-        dos = inquilinos[inquilino]["Tipo de pago"] == "Dólares"
-        if uno and inquilinos[inquilino]["Pagó?"] == "Sí":
-            expensas_total_pesos += float(inquilinos[inquilino]["Expensas"])
-        elif dos and inquilinos[inquilino]["Pagó?"] == "Sí":
-            expensas_total_dolares += float(inquilinos[inquilino]["Expensas"])
-            print(expensas_total_dolares)
-        elif inquilinos[inquilino]["Pagó?"] == "Sí" and not (uno or dos):
-            expensas_total_otros += float(inquilinos[inquilino]["Expensas"])
-    for gasto in gastos:
-        if gastos[gasto]["Tipo de cambio"] == "Pesos":
-            gastos_total_pesos += float(gastos[gasto]["Monto"])
-        elif gastos[gasto]["Tipo de cambio"] == "Dólares":
-            gastos_total_dolares += float(gastos[gasto]["Monto"])
-        else:
-            gastos_total_otros += float(gastos[gasto]["Monto"])
-    ganancias_pesos = expensas_total_pesos - gastos_total_pesos
-    ganancias_dolares = expensas_total_dolares - gastos_total_dolares
-    ganancias_otros = expensas_total_otros - gastos_total_otros
-    return [[ganancias_pesos,expensas_total_pesos,gastos_total_pesos],
-            [ganancias_dolares,expensas_total_dolares,gastos_total_dolares],
-            [ganancias_otros,expensas_total_otros,gastos_total_otros]]
-
-
 
 # Ejecución del programa
 
@@ -123,15 +12,24 @@ def ganancias(inquilinos:dict,gastos:dict):
 def main(page : ft.Page):
     """Cuerpo de la app"""
     #Configuración
+    page.window.prevent_close = True
+    page.window.on_event = lambda e: window_event_handler(e,inquilinos,gastos,alerta_cerrar,page)
     page.scroll = True
     page.title = "Consorciapp"
     page.bgcolor = "#BAFDE1"
     page.window.bgcolor = "#326C71"
     page.window.icon = (ft.Icon(ft.Icons.ACCOUNT_BALANCE_OUTLINED))
-    #   PORQUE NO CAMBIA EL ICONO LPM
-    
+
     
     #Eventos
+    
+    def actualizar_listas():
+        lista_gastos.options = dict_to_list(gastos)
+        lista_inquilinos.options = dict_to_list(inquilinos)
+        lista_inquilinos.update()
+        lista_inquilinos.update()
+        page.update()
+        return
     
     def route_control(route):
         page.views.clear()
@@ -191,10 +89,7 @@ def main(page : ft.Page):
         page.open(ft.SnackBar(ft.Text("Inquilino Modificado")))
         return
     
-    def funcion_auxiliar_2(f,diccionario,value):
-        eliminar(f,diccionario=diccionario,value=value,aux=True)
-        page.open(ft.SnackBar("Eliminado"))
-        return
+
     
     def auxiliar_gastos(e):
         agregar_gasto(e,False)
@@ -217,6 +112,7 @@ def main(page : ft.Page):
         return
     
     def ingresar_o_modificar(e : ft.OptionalControlEventCallable,aux = False):
+
         try:
             float(expensas.value)
             if (departamento.value not in inquilinos) or aux:
@@ -242,6 +138,7 @@ def main(page : ft.Page):
         
         tabla_principal.rows = dict_to_rows(inquilinos)
         tabla_principal.update()
+        actualizar_listas()
         return
     
 
@@ -267,30 +164,52 @@ def main(page : ft.Page):
         
         tabla_gastos.rows = dict_to_rows(gastos)
         tabla_gastos.update()
+        actualizar_listas()
         return
 
-    def eliminar(f:ft.OptionalControlEventCallable,diccionario : dict,value,aux=False):
-        alerta_eliminar = ft.AlertDialog(
-                            modal=True,
-                            title="Eliminar",
-                            content=ft.Text("¿Está seguro que desea eliminar?"),
-                            actions=[ft.FilledButton("Eliminar",bgcolor="#E55934",
-                                                     on_click=lambda g: funcion_auxiliar_2(f,diccionario=diccionario,value=value)),
-                                    ft.Button("Cancelar",on_click=lambda e: page.close(alerta_eliminar))]
-                            )
-        if aux:
-            diccionario.pop(value)
-            page.close(alerta_eliminar)
-        else:    
-            page.open(alerta_eliminar)
-        tabla_gastos.rows = dict_to_rows(gastos)
-        tabla_principal.rows = dict_to_rows(inquilinos)
-        tabla_gastos.update()
-        tabla_principal.update()
-        return
+    def eliminar(f:ft.OptionalControlEventCallable,diccionario : dict,value):
+        def funcion_auxiliar_2(f,diccionario,value):
+            try:
+                diccionario.pop(value)
+                cerrar_alerta(f)
+                tabla_gastos.rows = dict_to_rows(gastos)
+                tabla_principal.rows = dict_to_rows(inquilinos)
+                tabla_gastos.update()
+                tabla_principal.update()
+                lista_gastos.options = dict_to_list(gastos)
+                lista_inquilinos.options = dict_to_list(inquilinos)
+                lista_gastos.update()
+                lista_inquilinos.update()
+                page.update()
+            except KeyError:
+                page.open(ft.SnackBar(ft.Text("Seleccione otra opción")))
+            return
         
-    
+        alerta_eliminar = ft.AlertDialog(
+                    modal=True,
+                    title="Eliminar",
+                    content=ft.Text("¿Está seguro que desea eliminar?"),
+                    actions=[ft.FilledButton("Eliminar",bgcolor="#E55934",
+                                                on_click=lambda e:funcion_auxiliar_2(f,diccionario,value)),
+                            ft.Button("Cancelar",on_click=lambda g: page.close(alerta_eliminar))]
+                    )
+        
+        def cerrar_alerta(f):
+            page.close(alerta_eliminar)
+            page.open(ft.SnackBar(ft.Text("Eliminado")))
+            return
+        page.open(alerta_eliminar)
+        return
     #Componentes
+    
+    alerta_cerrar = ft.AlertDialog(title="Cerrar el Programa?",
+                                   modal= True,
+                                   actions=[
+                                       ft.FilledButton("Cerrar",
+                                                       on_click=lambda e: page.window.destroy()),
+                                       ft.Button("Cancelar",
+                                                 on_click=lambda e: page.close(alerta_cerrar))
+                                   ])
     
     alerta_gastos = ft.AlertDialog(
                     title="Gasto ya en lista",
@@ -504,7 +423,6 @@ def main(page : ft.Page):
         ],alignment=ft.MainAxisAlignment.CENTER
     )
     
-
     page.on_route_change = route_control
     page.go(page.route)
     
@@ -514,7 +432,7 @@ def main(page : ft.Page):
 
 
 
-
+# guardar(inquilinos,gastos)
 
 
 
