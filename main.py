@@ -84,7 +84,36 @@ def dict_to_list(inquilinos:dict) -> list:
                      )
     return lista
 
-
+def ganancias(inquilinos:dict,gastos:dict):
+    expensas_total_pesos = 0
+    gastos_total_pesos = 0
+    expensas_total_dolares = 0
+    gastos_total_dolares = 0
+    expensas_total_otros = 0
+    gastos_total_otros = 0
+    for inquilino in inquilinos:
+        uno = inquilinos[inquilino]["Tipo de pago"] == "Pesos"
+        dos = inquilinos[inquilino]["Tipo de pago"] == "Dólares"
+        if uno and inquilinos[inquilino]["Pagó?"] == "Sí":
+            expensas_total_pesos += float(inquilinos[inquilino]["Expensas"])
+        elif dos and inquilinos[inquilino]["Pagó?"] == "Sí":
+            expensas_total_dolares += float(inquilinos[inquilino]["Expensas"])
+            print(expensas_total_dolares)
+        elif inquilinos[inquilino]["Pagó?"] == "Sí" and not (uno or dos):
+            expensas_total_otros += float(inquilinos[inquilino]["Expensas"])
+    for gasto in gastos:
+        if gastos[gasto]["Tipo de cambio"] == "Pesos":
+            gastos_total_pesos += float(gastos[gasto]["Monto"])
+        elif gastos[gasto]["Tipo de cambio"] == "Dólares":
+            gastos_total_dolares += float(gastos[gasto]["Monto"])
+        else:
+            gastos_total_otros += float(gastos[gasto]["Monto"])
+    ganancias_pesos = expensas_total_pesos - gastos_total_pesos
+    ganancias_dolares = expensas_total_dolares - gastos_total_dolares
+    ganancias_otros = expensas_total_otros - gastos_total_otros
+    return [[ganancias_pesos,expensas_total_pesos,gastos_total_pesos],
+            [ganancias_dolares,expensas_total_dolares,gastos_total_dolares],
+            [ganancias_otros,expensas_total_otros,gastos_total_otros]]
 
 
 
@@ -135,16 +164,6 @@ def main(page : ft.Page):
                 )
             )
             page.update()
-        elif page.route == "/quitar_inquilino":
-            page.views.append(
-                ft.View("/quitar_inquilino",
-                    [
-                        ft.FloatingActionButton(icon=ft.Icons.MENU,on_click=lambda e:page.open(drawer_principal)),
-                        pagina_quitar_inquilino
-                    ],drawer=drawer_principal,scroll=ft.ScrollMode.ADAPTIVE
-                    )
-                )
-            page.update()
         elif page.route == "/modificar":
             page.views.append(
                 ft.View("/modificar",
@@ -175,7 +194,13 @@ def main(page : ft.Page):
     def funcion_auxiliar_2(f,diccionario,value):
         eliminar(f,diccionario=diccionario,value=value,aux=True)
         page.open(ft.SnackBar("Eliminado"))
-        return  
+        return
+    
+    def auxiliar_gastos(e):
+        agregar_gasto(e,False)
+        page.close(alerta_gastos)
+        page.open(ft.SnackBar(ft.Text("Gasto Modificado")))
+        return
 
     def cambio_de_pagina(e: ft.ControlEvent):
         page.views.clear()
@@ -183,13 +208,11 @@ def main(page : ft.Page):
             page.go("/main")
         elif e.data == "1" and page.route != "/agregar_inquilinos":
             page.go("/agregar_inquilinos")
-        elif e.data == "3" and page.route != "/agregar_gastos":
+        elif e.data == "2" and page.route != "/agregar_gastos":
             page.go("/agregar_gastos")
-        elif e.data == "2" and page.route != "/quitar_inquilinos":
-            page.go("/quitar_inquilino")
         elif e.data == "4" and page.route != "/modificar":
-            page.go("/modificar")
-        elif e.data == "5" and page.route != "/resumen":
+            page.go("/modificar") 
+        elif e.data == "3" and page.route != "/resumen":
             page.go("/resumen")
         return
     
@@ -222,10 +245,10 @@ def main(page : ft.Page):
         return
     
 
-    def agregar_gasto(f):
+    def agregar_gasto(f,aux=True):
         try:
             float(gasto_monto.value)
-            if gasto.value in gastos:
+            if gasto.value in gastos and aux:
                 page.open(alerta_gastos)
             else:
                 gastos[gasto.value]={
@@ -272,9 +295,10 @@ def main(page : ft.Page):
     alerta_gastos = ft.AlertDialog(
                     title="Gasto ya en lista",
                     modal=True,
-                    content=ft.Text("Por favor ingrese un nombre de gasto distintivo"),
+                    content=ft.Text("Elija un nombre distinto (plomero --> plomero 5A) \nO presione modificar para modificar"),
                     actions=[
-                        ft.TextButton("Perdón no lo hago de vuelta", on_click=lambda e: page.close(alerta_gastos))
+                        ft.TextButton("Cancelar", on_click=lambda e: page.close(alerta_gastos)),
+                        ft.FilledButton("Modificar",on_click=auxiliar_gastos)
                     ]
     )
     
@@ -355,27 +379,25 @@ def main(page : ft.Page):
                 label="Agregar/modificar inquilinos",
                 selected_icon=ft.Icons.PERSON_ADD,
             ),
-            ft.NavigationDrawerDestination(
-                icon=ft.Icon(ft.Icons.PERSON_REMOVE_OUTLINED),
-                label="Quitar Inquilino",
-                selected_icon=ft.Icons.PERSON_REMOVE,
-            ),
             ft.Divider(thickness=1,opacity=1),
             ft.NavigationDrawerDestination(
                 icon=ft.Icon(ft.Icons.ADD_CHART_OUTLINED),
-                label="Agregar Gastos",
+                label="Agregar/modificar Gastos",
                 selected_icon=ft.Icons.ADD_CHART
             ),
-            ft.NavigationDrawerDestination(
-                icon=ft.Icon(ft.Icons.MODE_OUTLINED),
-                label="Modificar Gastos/expensas",
-                selected_icon=ft.Icons.MODE
-            ),
+                        ft.Divider(thickness=1,opacity=1),
             ft.NavigationDrawerDestination(
                 icon=ft.Icons.ANALYTICS_OUTLINED,
                 label="Resumen",
                 selected_icon=ft.Icons.ANALYTICS
+            ),
+            ft.Divider(thickness=1,opacity=1),
+            ft.NavigationDrawerDestination(
+                icon=ft.Icon(ft.Icons.MODE_OUTLINED),
+                label="Quitar Gastos/expensas",
+                selected_icon=ft.Icons.MODE
             )
+
         ]
     )
 
@@ -439,16 +461,13 @@ def main(page : ft.Page):
          ],horizontal_alignment=ft.CrossAxisAlignment.CENTER
     )
 
-    pagina_quitar_inquilino=ft.Row(
-        
-    )
     
     pagina_modificar=ft.Column([
                             ft.Column([
-                                ft.Row([lista_inquilinos,ft.FilledButton("Modificar"),
+                                ft.Row([lista_inquilinos,
                                         ft.FilledButton("Borrar",bgcolor="#E55934",on_click=lambda e: eliminar(e,inquilinos,lista_inquilinos.value))]),
                                 ft.Divider(color="#F5EFFF",thickness=2),
-                                ft.Row([lista_gastos,ft.FilledButton("Modificar"),
+                                ft.Row([lista_gastos,
                                         ft.FilledButton("Borrar",bgcolor="#E55934",on_click=lambda e: eliminar(e,gastos,lista_gastos.value))]),  
                                 ],alignment=ft.MainAxisAlignment.CENTER),
                             ft.Row([
@@ -461,7 +480,28 @@ def main(page : ft.Page):
     
     
     pagina_resumen=ft.Row(
-        
+        [
+            ft.Column([tabla_principal,
+                       ft.Text(f"Expensas totales en pesos: {ganancias(inquilinos,gastos)[0][1]}"),
+                       ft.Text(f"Expensas totales en dólares: {ganancias(inquilinos,gastos)[1][1]}"),
+                       ft.Text(f"Expensas totales otros: {ganancias(inquilinos,gastos)[2][1]}")
+                       ],horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+            ft.Column([
+                ft.Text("Ganancias del mes en pesos:"),
+                ft.Text(f"{ganancias(inquilinos,gastos)[0][0]}"),
+                ft.Text("Ganancias del mes en dolares:"),
+                ft.Text(f"{ganancias(inquilinos,gastos)[1][0]}"),
+                ft.Text("Ganancias del mes en dolares:"),
+                ft.Text(f"{ganancias(inquilinos,gastos)[2][0]}")
+            ],horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+            ft.Column([
+                tabla_gastos,
+                ft.Text(f"Gastos totales en pesos: {ganancias(inquilinos,gastos)[0][2]}"),
+                ft.Text(f"Gastos totales en dólares: {ganancias(inquilinos,gastos)[1][2]}"),
+                ft.Text(f"Gastos totales otros: {ganancias(inquilinos,gastos)[2][2]}")
+            ],horizontal_alignment=ft.CrossAxisAlignment.CENTER)
+            
+        ],alignment=ft.MainAxisAlignment.CENTER
     )
     
 
