@@ -18,7 +18,7 @@ def main(page : ft.Page):
     page.title = "Consorciapp"
     page.bgcolor = "#BAFDE1"
     page.window.bgcolor = "#326C71"
-    page.window.icon = (ft.Icon(ft.Icons.ACCOUNT_BALANCE_OUTLINED))
+    page.window.icon = "icon.ico"
 
     
     #Eventos
@@ -83,7 +83,7 @@ def main(page : ft.Page):
             )
             page.update()
     
-    def funcion_auxiliar(f):
+    def funcion_auxiliar_agregar(f):
         ingresar_o_modificar(f,aux=True)
         page.close(alerta_inquilino_ya)
         page.open(ft.SnackBar(ft.Text("Inquilino Modificado")))
@@ -168,7 +168,7 @@ def main(page : ft.Page):
         return
 
     def eliminar(f:ft.OptionalControlEventCallable,diccionario : dict,value):
-        def funcion_auxiliar_2(f,diccionario,value):
+        def funcion_auxiliar_eliminar(f,diccionario,value):
             try:
                 diccionario.pop(value)
                 cerrar_alerta(f)
@@ -190,7 +190,7 @@ def main(page : ft.Page):
                     title="Eliminar",
                     content=ft.Text("¿Está seguro que desea eliminar?"),
                     actions=[ft.FilledButton("Eliminar",bgcolor="#E55934",
-                                                on_click=lambda e:funcion_auxiliar_2(f,diccionario,value)),
+                                                on_click=lambda e:funcion_auxiliar_eliminar(f,diccionario,value)),
                             ft.Button("Cancelar",on_click=lambda g: page.close(alerta_eliminar))]
                     )
         
@@ -238,7 +238,7 @@ def main(page : ft.Page):
                             title=ft.Text("ALERTA"),
                             content=ft.Text("El inquilino ya se encuentra registrado"),
                             actions=[
-                                ft.FilledButton("Modificar",color="#326C71",on_click=funcion_auxiliar),
+                                ft.FilledButton("Modificar",color="#326C71",on_click=funcion_auxiliar_agregar),
                                 ft.TextButton("Cancelar",on_click=lambda f: page.close(alerta_inquilino_ya)),
                             ],
                             actions_alignment=ft.MainAxisAlignment.END,
@@ -427,9 +427,6 @@ def main(page : ft.Page):
     page.go(page.route)
     
 
-    
-    pass
-
 
 
 # guardar(inquilinos,gastos)
@@ -439,7 +436,7 @@ def main(page : ft.Page):
 
 
 if __name__ == "__main__":
-    ft.app(target= main,name="Consorciapp")
+    ft.app(target= main,name="Consorciapp",assets_dir="assets")
 
 
 
